@@ -1,12 +1,14 @@
 import * as mongoose from "mongoose";
-import { prop, getName, getModelForClass, Ref, isDocument } from '@typegoose/typegoose';
-import {Schema, Types} from 'mongoose';
+import {Ref, isDocument, isRefTypeArray, isDocumentArray} from '@typegoose/typegoose';
+import {Types} from 'mongoose';
 
 import User from "./models/User";
 import Product from "./models/Product";
 import Second from "./models/SecondClass";
 import {Comment} from "./models/Comments";
 import {ObjectId} from "mongodb";
+import Order from "./models/Order";
+import product from "./models/Product";
 
 // import ChildModel from "./models/Child";
 // import ParentModel, {Parent} from "./models/Parent";
@@ -84,10 +86,29 @@ async function run() {
     await second.first.save()
 }
 
-run()
+// run()
 
 
+async function createProduct() {
+    const product = new Product({
+        name: "keyboard",
+        price: 200,
+        url: "product-03",
+        tags: ["keyboard", "gaming", "logi"],
+        comments: [
+            {
+                text: "great product!"
+            },
+            {
+                text: "not bad product"
+            }
+        ],
+        owner: "6528dae54e6a1ffa8a7c1a37"
+    })
 
+    await product.save();
+
+}
 
 
 async function executeQueries() {
@@ -148,11 +169,11 @@ async function executeQueries() {
 
         const comment = product.comments.find(e => e._id.toString() === '6528e4f8d4c47b8eba4a57fe');
         if (comment) {
-            comment.text = "so so product v2";
+            comment.text = "so so product v3";
         }
 
-        for (let i=0; i < 1; i++) {
-            const newComment = new Comment({text: `testing comment: 4-${i}`});
+        for (let i=0; i < 0; i++) {
+            const newComment = new Comment({title: 'my title', text: `testing comment: 6-${i}`});
             newComment._id = new ObjectId()
             product.comments.push(newComment);
         }
@@ -169,7 +190,51 @@ async function executeQueries() {
     // console.log(product);
 }
 
-executeQueries();
+// executeQueries();
+// createProduct();
+// createOrder();
+getOrder();
+
+async function createOrder() {
+    const order = new Order({
+        date: new Date()
+    })
+
+    const product = await Product.findOne({url: 'product-01'}).exec();
+
+    if (product) order.products.push(product);
+
+    await order.save();
+
+}
+
+async function getOrder() {
+    const order = await Order.findOne({_id: "652f72dba84d6eab84c61036"})
+        .populate("products")
+        .exec()
+
+    if (!isDocument(order)) {
+        throw new Error("no order");
+    }
+
+    // if (!isDocument(order.products)) {
+    //    throw new Error("no products");
+    // }
+
+    if (!isDocumentArray(order.products)) throw new Error("no products");
+
+    const product = order.products.find(e => e.url === "product-01");
+    if (product) {
+        product.price = 303;
+
+        await product.save()
+        await order.save()
+
+    }
+
+
+    console.log(order)
+}
 
 
 //
